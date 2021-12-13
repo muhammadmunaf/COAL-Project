@@ -116,8 +116,11 @@ endm
 		mov al, 13h
 		int 10h
 		
-		;CALL titleScreen
+		CALL titleScreen
 		
+		mov ah,0
+		mov al,13h
+		int 10h
 		;blankScreen
 		
 		
@@ -167,8 +170,8 @@ endm
 		ret
 	makeCandies endP
 	
-	generateRandomNumber Proc
-		GenerateRandomNum:
+	generateRandomNumber Proc	
+		
 		mov ah, 00h  ; interrupts to get system time        
 		int 1AH      ; CX:DX now hold number of clock ticks since midnight      
 
@@ -191,6 +194,15 @@ endm
 	
 	selectCandy Proc
 		CALL generateRandomNumber
+		mov cx,65500
+		.while cx>0
+		dec cx
+		.endw
+		
+		mov cx,40000
+		.while cx>0
+		dec cx
+		.endw
 		
 		.if(generatedNumber == 0)
 			CALL makeLolipopCandy
@@ -236,7 +248,7 @@ endm
 		;mov  ah, 02h  ;SetCursorPosition
 		;int  10h
 
-		;mov  al, [si]
+		;mov  al, 'A'
 		;mov  bl, 0Eh  ;Color is yellow
 		;mov  bh, 0    ;Display page
 		;mov  ah, 0Eh  ;Teletype
@@ -1346,6 +1358,5 @@ endm
 		ret
 	titleScreen endP
 end
-
 
 
