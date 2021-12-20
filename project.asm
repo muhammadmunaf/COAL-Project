@@ -102,6 +102,59 @@ makeSquare macro x, y, len, color
 
 endm 
 
+displayBigValue macro p1
+	push cx
+	push dx
+	push ax
+	
+	mov dx, p1
+	add dx, 48
+	mov ah, 02h
+	int 21h
+	;sub dx, 48
+	
+	pop ax
+	pop dx
+	pop cx
+endm
+
+
+displaySmallValue macro p1
+	push cx
+	push dx
+	push ax
+	
+	mov dl, p1
+	add dl, 48
+	mov ah, 02h
+	int 21h
+	;sub dl, 48
+	
+	pop ax
+	pop dx
+	pop cx
+endm
+
+getMatrixIndex macro i, j
+
+	;displayThis j
+	
+	;displayThis -16
+	
+	mov cx, 0
+	mov ax, j
+	mov cx, 6
+	mul cx ; got (j*6)
+	
+	;displayThis ax
+	;displayThis -16
+	
+	add ax, i ; (j*6) + i
+	
+	;mov ax, cx
+	
+endm
+
 blankScreen macro 
 	mov ah,0
 	mov al,13h
@@ -143,6 +196,11 @@ endm
 	
 	; Variables
 	
+	gridMatrix db 49 dup(0) ; 2D array containing each candy
+	matrixIteratorX dw 0 ; to navigate the array x
+	matrixIteratorY dw 0 ; to navigate the array y
+	matrixIteratorMain dw 0; combination of X and Y
+	
 	; Global
 	scoreStr db "Score$", 0
 	usernameStr db 20 dup('$')
@@ -178,13 +236,15 @@ endm
 		mov al, 13h
 		int 10h
 		
-		CALL titleScreen		
+		;CALL titleScreen		
 		blankScreen
 			
 		CALL drawGrid
 		;CALL makeBombCandy
 		CALL makeCandies
 		CALL displayString
+		
+		CALL matrixTraversal
 
 		mov ah, 4ch
 		int 21h
@@ -194,7 +254,8 @@ endm
 		mov cx, 7
 		mov ax, 30
 		mov bx, 16
-
+		mov matrixIteratorX, 0
+		mov matrixIteratorY, 0
 		.while(cx>0)
 			push cx
 			mov cx, 7
@@ -212,14 +273,23 @@ endm
 				;CALL makeBombCandy
 				;CALL makeStickCandy
 				CALL selectCandy
+				
+				push dx
+				mov dx, matrixIteratorMain
+				;displaySmallValue [gridMatrix+dx]
+				pop dx
+				
 				pop bx
 				pop ax
 				
 				add ax, 25
+				inc matrixIteratorX
 				
 				pop cx
 				dec cx
 			.endw
+			mov matrixIteratorX, 0
+			inc matrixIteratorY
 			mov ax, 30
 			add bx, 25
 			pop cx
@@ -244,16 +314,83 @@ endm
 		ret
 	generateRandomNumber endP
 	
-	selectCandy Proc
+	testing Proc
+		displaySmallValue -35 
+		mov cx, 7
+		mov matrixIteratorX, 0
+		mov matrixIteratorY, 0
+		.while(cx>0)
+			push cx
+			mov cx, 7
+			.while (cx>0)
+				push cx
+				
+				getMatrixIndex matrixIteratorX, matrixIteratorY
+		
+				mov matrixIteratorMain, ax
+				push ax
+				displaySmallValue [gridMatrix+dx]
+				pop ax
+				;push dx
+				;mov dx, matrixIteratorMain
+				;displaySmallValue [gridMatrix+dx]
+				;pop dx
+				
+				inc matrixIteratorX
+				
+				pop cx
+				dec cx
+			.endw
+			mov matrixIteratorX, 0
+			inc matrixIteratorY
+			pop cx
+			dec cx
+		.endw
+	testing endP
+	
+	matrixTraversal Proc USES cx bx ax
+		displaySmallValue -35 
+		;mov si, offset gridMatrix
+		
+		;mov cx, 49
+		mov count, 0
+		mov matrixIteratorX, 0
+		mov matrixIteratorY, 0
+		;mov ax, 49
+		.while(count<49)
+			;push cx
+			;displayBigValue cx ;can display current index form here
+			;sub cx, 4
+			mov bx, count
+			displaySmallValue [gridMatrix+bx] ; displaying matix value
+			displayBigValue -16 ; display a space ' '
+			inc count
+			;inc ax
+
+			;pop cx
+			;dec cx
+		.endw
+		ret
+	matrixTraversal endP
+	
+	selectCandy Proc USES cx ax bx
 		CALL generateRandomNumber
+		
+		getMatrixIndex matrixIteratorX, matrixIteratorY
+		
+		mov matrixIteratorMain, ax
+		
+		mov bl, generatedNumber
+		mov [gridMatrix+ax], bl
+		
 		mov cx,65500
 		.while cx>0
 		dec cx
 		.endw
 		
-		mov cx,40000
+		mov cx,65500
 		.while cx>0
-		dec cx
+			dec cx
 		.endw
 		
 		.if(generatedNumber == 0)
@@ -266,8 +403,12 @@ endm
 			CALL makeToffeeCandy
 		.elseif(generatedNumber == 4)
 			CALL makeStickCandy
-		;	CALL makeBombCandy
+			;CALL makeBombCandy
 		.endif
+		
+		;displayBigValue ax ; can display current index
+		displaySmallValue [gridMatrix+ax] ; displaying each index of the matrix
+		displayBigValue -16 ; displays a space ' '
 		ret
 	selectCandy endP
 
@@ -296,19 +437,6 @@ endm
 	drawGrid endP
 	
 	displayString Proc
-		
-		;mov  dl, 24   ;Column
-		;mov  dh, 2   ;Row
-		;mov  bh, 0    ;Display page
-		;mov  ah, 02h  ;SetCursorPosition
-		;int  10h
-
-		;mov  al, 'A'
-		;mov  bl, 0Eh  ;Color is yellow
-		;mov  bh, 0    ;Display page
-		;mov  ah, 0Eh  ;Teletype
-		;int  10h
-		
 		mov ah,02h
 		mov bx,0
 		mov dh,2   ; y-axis
